@@ -61,8 +61,9 @@ bool ImportCell0D(PolygonalMesh& mesh)
     }
 
     mesh.Cell0DId.reserve(mesh.NumCell0D);   // faccio spazio al vettore di id per tutte le celle
-    mesh.Cell0DCoordinate = Eigen::MatrixXd::Zero(2, mesh.NumCell0D);  // matrice di coordinate in double
+    mesh.Cell0DCoordinate = Eigen::MatrixXd::Zero(3, mesh.NumCell0D);  // matrice di coordinate in double
 
+    unsigned int idx = 0;
     for (const string& line : listLines)
     {
         istringstream converter(line);
@@ -89,17 +90,19 @@ bool ImportCell0D(PolygonalMesh& mesh)
             {
                 mesh.MarkerCell0D[marker].push_back(id);
             }
-
+        }
         /// memorizzo le coordinate
         string x_string;
         getline(converter, x_string, ';');
-        mesh.Cell0DCoordinate(0, id) = stod(x_string);
+        mesh.Cell0DCoordinate(0, idx) = stod(x_string);
 
         string y_string;
         getline(converter, y_string, ';');
-        mesh.Cell0DCoordinate(1, id) = stod(y_string);
+        mesh.Cell0DCoordinate(1, idx) = stod(y_string);
+
+        ++idx;
         
-        }
+        
 
     }
 
@@ -138,6 +141,8 @@ bool ImportCell1D(PolygonalMesh& mesh)
     mesh.Cell1DId.reserve(mesh.NumCell1D);
     mesh.Cell1DExtrema = Eigen::MatrixXi(2, mesh.NumCell1D);
 
+    unsigned  int idx = 0;   // indicizzatore
+
     for (const string& line : listLines)
     {
         istringstream converter(line);
@@ -164,17 +169,19 @@ bool ImportCell1D(PolygonalMesh& mesh)
             {
                 mesh.MarkerCell1D[marker].push_back(id);
             }
-
+        }
         /// Memorizzo gli estremi del segmento
         string extrema_iniziale;
         getline(converter, extrema_iniziale, ';');
-        mesh.Cell1DExtrema(0, id) = stoi(extrema_iniziale);
+        mesh.Cell1DExtrema(0, idx) = stoi(extrema_iniziale);
 
         string extrema_finale;
         getline(converter, extrema_finale, ';');
-        mesh.Cell1DExtrema(1, id) = stoi(extrema_finale);
+        mesh.Cell1DExtrema(1, idx) = stoi(extrema_finale);
+
+        ++idx;
     
-        }
+        
     }
 
     return true;
@@ -237,7 +244,7 @@ bool ImportCell2D(PolygonalMesh& mesh)
         getline(converter, NumVer_string, ';');
         mesh.Cell2DNumVertice = stoi(NumVer_string);   //numero dei vertici memorizzato
 
-        vector<unsigned int> vertice;   // vettore dei vertici
+        vector<unsigned int> vertice(mesh.Cell2DNumVertice);   // vettore dei vertici
         for(unsigned int i = 0; i < mesh.Cell2DNumVertice; i++) {
             string vertice_string;
             getline(converter, vertice_string, ';');
@@ -251,7 +258,7 @@ bool ImportCell2D(PolygonalMesh& mesh)
         getline(converter, NumEdge_string, ';');
         mesh.Cell2DNumEdge = stoi(NumEdge_string);
 
-        vector<unsigned int> edge;
+        vector<unsigned int> edge(mesh.Cell2DNumEdge);
 
         for(unsigned int i = 0; i < mesh.Cell2DNumEdge; i++) {
             string edge_string;
