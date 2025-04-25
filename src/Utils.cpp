@@ -50,7 +50,7 @@ bool ImportCell0D(PolygonalMesh& mesh)
 
     listLines.pop_front();   // rimuovo la prima riga che è la header del file
 
-    // "compilo" ogni "parte" della struct mesh che è stata inizializzata col nullo (= zero o vuoto)
+    /// "compilo" ogni "parte" della struct mesh che è stata inizializzata col nullo (= zero o vuoto)
 
     mesh.NumCell0D = listLines.size();   // Memorizzo il numero di celle (= n. di punti) 
 
@@ -61,21 +61,24 @@ bool ImportCell0D(PolygonalMesh& mesh)
     }
 
     mesh.Cell0DId.reserve(mesh.NumCell0D);   // faccio spazio al vettore di id per tutte le celle
-    mesh.Cell0DCoordinate = Eigen::MatrixXd::Zero(2, mesh.NumCell0D);  // matrice di coordinate dinamica
+    mesh.Cell0DCoordinate = Eigen::MatrixXd::Zero(2, mesh.NumCell0D);  // matrice di coordinate in double
 
     for (const string& line : listLines)
     {
         istringstream converter(line);
 
-        unsigned int id;
-        unsigned int marker;
+        /// memorizzo l'id
+        string id_string;
+        getline(converter, id_string, ';');
+        unsigned int id = stoi(id_string);
+        mesh.Cell0DId.push_back(id);
 
-        converter >>  id >> marker >> mesh.Cell0DCoordinate(0, id) >> mesh.Cell0DCoordinate(1, id);   //Memorizzo le coord.
+        /// memorizzo il marker
+        string marker_string;
+        getline(converter, marker_string, ';');
+        unsigned int marker = stoi(marker_string);
 
-        mesh.Cell0DId.push_back(id);   // Memorizzo l'id
-
-        /// Memorizza i marker
-        if(marker != 0)
+        if(marker != 0)   // vedo se il marker c'è già o no
         {
             const auto it = mesh.MarkerCell0D.find(marker);   // uso "auto" poichè it è un iteratore che non so dove punta 
             if(it == mesh.MarkerCell0D.end())   // aggiungo un nuovo marker
@@ -86,6 +89,16 @@ bool ImportCell0D(PolygonalMesh& mesh)
             {
                 mesh.MarkerCell0D[marker].push_back(id);
             }
+
+        /// memorizzo le coordinate
+        string x_string;
+        getline(converter, x_string, ';');
+        mesh.Cell0DCoordinate(0, id) = stod(x_string);
+
+        string y_string;
+        getline(converter, y_string, ';');
+        mesh.Cell0DCoordinate(1, id) = stod(y_string);
+        
         }
 
     }
@@ -129,13 +142,17 @@ bool ImportCell1D(PolygonalMesh& mesh)
     {
         istringstream converter(line);
 
-        unsigned int id;
-        unsigned int marker;
-
-        converter >>  id >> marker >>  mesh.Cell1DExtrema(0, id) >>  mesh.Cell1DExtrema(1, id);
+        /// Memorizzo l'id
+        string id_string;
+        getline(converter, id_string, ';');
+        unsigned int id = stoi(id_string);
         mesh.Cell1DId.push_back(id);
 
-        /// Memorizza i marker
+        /// Memorizzo il marker
+        string marker_string;
+        getline(converter, marker_string, ';');
+        unsigned int marker = stoi(marker_string);
+
         if(marker != 0)
         {
             const auto it = mesh.MarkerCell1D.find(marker);
@@ -147,6 +164,16 @@ bool ImportCell1D(PolygonalMesh& mesh)
             {
                 mesh.MarkerCell1D[marker].push_back(id);
             }
+
+        /// Memorizzo gli estremi del segmento
+        string extrema_iniziale;
+        getline(converter, extrema_iniziale, ';');
+        mesh.Cell1DExtrema(0, id) = stoi(extrema_iniziale);
+
+        string extrema_finale;
+        getline(converter, extrema_finale, ';');
+        mesh.Cell1DExtrema(1, id) = stoi(extrema_finale);
+    
         }
     }
 
@@ -195,30 +222,44 @@ bool ImportCell2D(PolygonalMesh& mesh)
     {
         istringstream converter(line);
 
-        // memorizzo l'id nel vettore (ignoro il marker perchè qui non importa)
-        unsigned int id;
-        unsigned int marker;
-        converter >>  id >> marker;   // id e marker memorizzati
+        // Memorizzo l'id nel vettore 
+        string id_string;
+        getline(converter, id_string, ';');
+        unsigned int id = stoi(id_string);
         mesh.Cell2DId.push_back(id);   // memorizzo l'id nel vettore
 
+        // Memorizzo il marker che poi ignorerò perchè tanto è tutto zero
+        string marker_string;
+        getline(converter, marker_string, ';');
+        
+        // Memorizzo il vettore dei vertici
+        string NumVer_string;
+        getline(converter, NumVer_string, ';');
+        mesh.Cell2DNumVertice = stoi(NumVer_string);   //numero dei vertici memorizzato
 
-        // memorizzo il vettore dei vertici
-        converter >> mesh.Cell2DNumVertice;   // numero di vertici memorizzato
-
-        vector<mesh.Cell2DNumVertice> vertice;   // vettore dei vertici
-
-        for(unsigned int i = 0; i < mesh.Cell2DNumVertice; i++)
-            converter >> vertice[i];   // memorizzo ogni vertice nel vettore
-        mesh.Cell2DVertice.push_back(vertices);   // memorizzo il vettore dei vertici nel vettore 
+        vector<unsigned int> vertice;   // vettore dei vertici
+        for(unsigned int i = 0; i < mesh.Cell2DNumVertice; i++) {
+            string vertice_string;
+            getline(converter, vertice_string, ';');
+            vertice[i] = stoi(vertice_string);
+        }   
+        mesh.Cell2DVertice.push_back(vertice);   // memorizzo il vettore dei vertici nel vettore 
+        
 
         // memorizzo il vettore dei lati
-        converte >> mesh.Cell2DNumEdge;
+        string NumEdge_string;
+        getline(converter, NumEdge_string, ';');
+        mesh.Cell2DNumEdge = stoi(NumEdge_string);
 
-        vector<mesh.Cell2DNumEdge> edge;
+        vector<unsigned int> edge;
 
-        for(unsigned int i = 0; i < mesh.Cell2DNumEdge; i++)
-            converter >> edge[i];
-        mesh.Cell2DEdge.push_back(edges);
+        for(unsigned int i = 0; i < mesh.Cell2DNumEdge; i++) {
+            string edge_string;
+        getline(converter, edge_string, ';');
+        edge[i] = stoi(edge_string);
+        }
+        
+        mesh.Cell2DEdge.push_back(edge);
     }
 
     return true;
