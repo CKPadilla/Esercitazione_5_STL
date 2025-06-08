@@ -12,45 +12,45 @@ namespace PolygonalLibrary {
 struct PolygonalMesh
 {
 
-    /* Punto = Cell0D:
-    - NumCell0D : numero di punti
-    - Cell0DId : vettore dell'id di tutti i punti 
-    - Cell0DCoordinate : matrice delle corodinate di ciascun punto
-    - MarkerCell0D : marker o colore assegnato a ciascun punti in base alla sua posizione/coordinate
+    /* Cell0D = punti:
+    - Cell0D_num : numero di punti
+    - Cell0D_id : vettore degli id dei punti : dim 1 x Cell0D_num 
+    - Cell0D_coordinate : matrice di coordinate (x,y) : dim 3 x Cell0D_num
+    - Cell0D_markers : mappa<marker, lista dei punti di quel marker>
     */
 
-    unsigned int NumCell0D = 0; ///< number of Cell0D
-    std::vector<unsigned int> Cell0DId = {}; ///< Cell0D id, size 1 x NumberCell0D
-    Eigen::MatrixXd Cell0DCoordinate = {}; ///< Cell0D coordinate, size 2 x NumberCell0D (x,y)
-    std::map<unsigned int, list<unsigned int>> MarkerCell0D = {}; ///< Cell0D markers
+    unsigned int Cell0D_num = 0;   // quanti Cell0D
+    vector<unsigned int> Cell0D_id = {};   // id di vertici   
+    MatrixXd Cell0D_coordinate = {};   // coordinate (x,y,z)
+    map<unsigned int, list<unsigned int>> Cell0D_markers = {};   // markers 
 
-    /* Segmento = Cell1D:
-    - NumCell1D : numero di segmenti
-    - Cell1DId : vettore dell'id di ciascun segmento
-    - Cell1DExtrema : matrice degli estremi di ciascun segmento
-    - MarkerCell1D : marker o colore di ciascun segmento in base alla propria posizione
+    /* Cell1D = segmenti:
+    - Cell1D_num : numero di segmenti
+    - Cell1D_id : vettore degli id dei segmenti : dim 1 x Cell1D_num
+    - Cell1D_estremi : matrice degli id (in int) dei punti di estremi : dim 2 x Cell1D_num
+    - Cell1D_markers : mappa<marker, lista dei punti di quel marker>
     */
 
-    unsigned int NumCell1D = 0; ///< number of Cell1D
-    std::vector<unsigned int> Cell1DId = {}; ///< Cell1D id, size 1 x NumberCell1D
-    Eigen::MatrixXi Cell1DExtrema = {}; ///< Cell1D vertices indices, size 2 x NumberCell1D (fromId,toId)
-    std::map<unsigned int, list<unsigned int>> MarkerCell1D = {}; ///< Cell1D markers
+    unsigned int Cell1D_num = 0;   // quanti Cell1D
+    vector<unsigned int> Cell1D_id = {};   // id di segmento
+    MatrixXi Cell1D_estremi = {};   // id dei punti d'estremi (id1,id2)
+    map<unsigned int, list<unsigned int>> Cell1D_markers = {};   // markers
 
-    /* Solido = Cell2D:
-    - NumCell2D : numero di solidi
-    - Cell2DId : vettore dell'id di ciascun solido
-    - Cell2DNumVertice : numero di vertici di ogni solido
-    - Cell2DVertice : vettore di vettori dei vertici di ciascun solido
-    - Cell2DNumEdge :numero di lati di ogni solido
-    - Cell2DEdge: vettore di vettori dei lati di ciascun solido
+    /* Cell2D = facce:
+    - Cell2D_num : numero di facce
+    - Cell2D_id : vettore degli id delle facce : dim 1 x Cell2D_num
+    - Cell2D_numVertici : vettore dei numeri di vertici di ogni faccia : dim 1 x Cell2D_num
+    - Cell2D_vertici : vettore di vettori degli id dei vertici di ciascuna faccia : dim 1 x Cell2D_num
+    - Cell2D_numLati : vettore dei numeri di lati di ogni faccia : dim 1 x Cell2D_num
+    - Cell2D_lati: vettore di vettori dei lati che compongono ciascuna faccia : dim 1 x CEll2D_num
     */
 
-    unsigned int NumCell2D = 0; ///< number of Cell2D
-    std::vector<unsigned int> Cell2DId = {}; ///< Cell2D id, size 1 x NumberCell2D
-    unsigned int Cell2DNumVertice = 0; ///< Cell2D Vertices Number
-    std::vector<vector<unsigned int>> Cell2DVertice = {}; ///< Cell2D Vertices indices, size 1 x NumberCell2D
-    unsigned int Cell2DNumEdge = 0; ///< Cell2D Edges Number
-    std::vector<vector<unsigned int>> Cell2DEdge = {}; ///< Cell2D Cell1D indices, size 1 x NumberCell2D
+    unsigned int Cell2D_num = 0;   // quanti Cell2D
+    vector<unsigned int> Cell2D_id = {};   // id di faccia
+    vector<unsigned int> Cell2D_numVertici = {};   // numeri di vertici di ogni faccia
+    vector<vector<unsigned int>> Cell2D_vertici = {};   // id dei vertici 
+    vector<unsigned int> Cell2D_numLati = {};   // numeri di lati di ogni faccia
+    vector<vector<unsigned int>> Cell2D_lati = {};   // id dei lati
 };
 
 }

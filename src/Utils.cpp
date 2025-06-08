@@ -1,272 +1,313 @@
 #include "Utils.hpp"
+#include "PolygonalMesh.hpp"
 #include <iostream>
 #include <fstream>
 #include <sstream>
 
-namespace PolygonalLibrary
+using namespace std;
+using namespace Eigen;
+using namespace PolygonalLibrary;
+
+namespace PolygonalLibrary   //raccolgo tutte le funzioni in questo namespace
 {
 
+/*
+// Funzione : ImportMesh : legge il file dei dati e li memorizza nello struct PolygonalMesh
+// Inputs : 
+PolygonalMesh& mesh : reference allo struct PolygonalMesh
+const string& inputFile : file da leggere
+// Outputs : riempimento dello struct PolygonalMesh
+*/
 
-/// Import the polygonal mesh and test if the mesh is correct
-/// (reference) mesh: a PolygonalMesh struct
-/// return the result of the reading, true if is success, false otherwise
-
-bool ImportMesh(PolygonalMesh& mesh)
+bool ImportMesh(PolygonalMesh& mesh, 
+                const string& inFile_0,
+                const string& inFile_1,
+                const string& inFile_2)
 {
 
-    if(!ImportCell0D(mesh))
+    if(!ImportCell0D(mesh, inFile_0))
         return false;
 
-    if(!ImportCell1D(mesh))
+    if(!ImportCell1D(mesh, inFile_1))
         return false;
 
-    if(!ImportCell2D(mesh))
+    if(!ImportCell2D(mesh, inFile_2))
         return false;
 
     return true;
-
 }
 
-// ***************************************************************************
-/// Import the Cell0D properties from Cell0Ds.csv file
-/// (reference) mesh: una struct del tipo PolygonalMesh
-/// return the result of the reading, true if is success, false otherwise
 
-bool ImportCell0D(PolygonalMesh& mesh)
+
+
+/************************************************/
+
+/*
+// Funzione : ImportCell0D : legge il file dei dati e li memorizza nello struct PolygonalMesh
+// Inputs : 
+PolygonalMesh& mesh : reference allo struct PolygonalMesh
+const string& inputFile : file da leggere
+// Outputs : riempimento dello struct PolygonalMesh
+*/
+bool ImportCell0D(PolygonalMesh& mesh, const string& Cell0D_inputFile)
 {
 
-    ifstream file("./Cell0Ds.csv");
+    /// LETTURA FILE E SALVATAGGIO DI TUTTE LE RIGHE
+    ifstream file(Cell0D_inputFile);
 
-    if(file.fail())   // Se il file non viene aperto correttamente
+    if(file.fail())   // verifico l'apertura corretta
         return false;
 
     list<string> listLines;
 
     string line;
-    while (getline(file, line))   // raccolgo nel listLines ogni riga del file
+    while (getline(file, line))   // raccolgo nel listLines tutte le righe del file 
         listLines.push_back(line);
 
-    file.close();
+    file.close();   // chiusura file
 
-    listLines.pop_front();   // rimuovo la prima riga che è la header del file
+    listLines.pop_front();   // rimuovo l'header (=prima riga)
 
-    /// "compilo" ogni "parte" della struct mesh che è stata inizializzata col nullo (= zero o vuoto)
+    
+    /// RIEMPIMENTO DELLO STRUCT MESH
 
-    mesh.NumCell0D = listLines.size();   // Memorizzo il numero di celle (= n. di punti) 
+    /// Cell0D_num 
+    mesh.Cell0D_num = listLines.size();   
 
-    if (mesh.NumCell0D == 0)
+    if (mesh.Cell0D_num == 0)
     {
-        cerr << "There is no cell 0D" << endl;
+        cerr << "Non ci sono Cell0D." << endl;
         return false;
     }
 
-    mesh.Cell0DId.reserve(mesh.NumCell0D);   // faccio spazio al vettore di id per tutte le celle
-    mesh.Cell0DCoordinate = Eigen::MatrixXd::Zero(3, mesh.NumCell0D);  // matrice di coordinate in double
+    /// Cell0D_id , Cell0D_coordinate , Cell0D_markers
+    mesh.Cell0D_id.reserve(mesh.Cell0D_num);   // alloco memoria per Cell0D_id
+    mesh.Cell0D_coordinate = MatrixXd::Zero(3, mesh.Cell0D_num);  // inizializzo Cell0D_coordinate 
 
-    unsigned int idx = 0;
-    for (const string& line : listLines)
+    unsigned int i = 0;   //indicizzatore
+    for (const string& line : listLines)   // ogni riga è una Cell0D
     {
-        istringstream converter(line);
+        
+        istringstream stream_line(line);
 
-        /// memorizzo l'id
+        /// Cell0D_id
         string id_string;
-        getline(converter, id_string, ';');
-        unsigned int id = stoi(id_string);
-        mesh.Cell0DId.push_back(id);
+        getline(stream_line, id_string, ';');
+        unsigned int id = stoi(id_string);   // converto la string in int
+        mesh.Cell0D_id.push_back(id);
 
-        /// memorizzo il marker
+        /// Cell0D_markers
         string marker_string;
-        getline(converter, marker_string, ';');
-        unsigned int marker = stoi(marker_string);
+        getline(stream_line, marker_string, ';');
+        unsigned int marker = stoi(marker_string);   // converto la string in int
 
-        if(marker != 0)   // vedo se il marker c'è già o no
+        if(marker != 0)   // se marker=0, non va salvato
         {
-            const auto it = mesh.MarkerCell0D.find(marker);   // uso "auto" poichè it è un iteratore che non so dove punta 
-            if(it == mesh.MarkerCell0D.end())   // aggiungo un nuovo marker
+            const auto it = mesh.Cell0D_markers.find(marker);   // controllo se il marker è già memorizzato
+            if(it == mesh.Cell0D_markers.end())   // aggiungo un nuovo marker col primo elemento
             {
-                mesh.MarkerCell0D.insert({marker, {id}});
+                mesh.Cell0D_markers.insert({marker, {id}});
             }
             else   // aggiungo un elemento al marker
             {
-                mesh.MarkerCell0D[marker].push_back(id);
+                mesh.Cell0D_markers[marker].push_back(id);
             }
         }
-        /// memorizzo le coordinate
+
+        /// Cell0D_coordinate
         string x_string;
-        getline(converter, x_string, ';');
-        mesh.Cell0DCoordinate(0, idx) = stod(x_string);
+        getline(stream_line, x_string, ';');
+        mesh.Cell0D_coordinate(0, i) = stod(x_string);
 
         string y_string;
-        getline(converter, y_string, ';');
-        mesh.Cell0DCoordinate(1, idx) = stod(y_string);
+        getline(stream_line, y_string, ';');
+        mesh.Cell0D_coordinate(1, i) = stod(y_string);
 
-        ++idx;
-        
-        
-
+        i++; 
     }
 
     return true;
 }
 
-// ***************************************************************************
-/// Import the Cell1D properties from Cell1Ds.csv file
-/// (reference) mesh: a PolygonalMesh struct
-/// return the result of the reading, true if is success, false otherwise
+/************************************************/
 
-bool ImportCell1D(PolygonalMesh& mesh)
+/*
+// Funzione : ImportCell1D : legge il file dei dati e li memorizza nello struct PolygonalMesh
+// Inputs : 
+PolygonalMesh& mesh : reference allo struct PolygonalMesh
+const string& inputFile : file da leggere
+// Outputs : riempimento dello struct PolygonalMesh
+*/
+
+bool ImportCell1D(PolygonalMesh& mesh, const string& Cell1D_inputFile)
 {
-    ifstream file("./Cell1Ds.csv");
 
-    if(file.fail())
+    /// LETTURA FILE E SALVATAGGIO DI TUTTE LE RIGHE
+    ifstream file(Cell1D_inputFile);
+
+    if(file.fail())   // verifico apertura file
         return false;
 
     list<string> listLines;
     string line;
-    while (getline(file, line))
+    while (getline(file, line))   // raccolgo nel listLines tutte le righe del file
         listLines.push_back(line);
 
-    file.close();
+    file.close();   // chiudo file
 
-    listLines.pop_front();
+    listLines.pop_front();   // tolgo l'header (= prima riga)
 
-    mesh.NumCell1D = listLines.size();
+    /// RIEMPIMENTO DELLO STRUCT MESH
 
-    if (mesh.NumCell1D == 0)
+    /// Cell1D_num
+    mesh.Cell1D_num = listLines.size();
+
+    if (mesh.Cell1D_num == 0)
     {
-        cerr << "There is no cell 1D" << endl;
+        cerr << "Non ci sono Cell1D." << endl;
         return false;
     }
 
-    mesh.Cell1DId.reserve(mesh.NumCell1D);
-    mesh.Cell1DExtrema = Eigen::MatrixXi(2, mesh.NumCell1D);
+    /// Cell1D_id , Cell1D_estremi , Cell1D_markers
+    mesh.Cell1D_id.reserve(mesh.Cell1D_num);   // alloco memoria per Cell1D_id
+    mesh.Cell1D_estremi = MatrixXi::Zero(2, mesh.Cell1D_num);   // inizializzo Cell1D_estremi
 
-    unsigned  int idx = 0;   // indicizzatore
-
-    for (const string& line : listLines)
+    unsigned  int i = 0;   // indicizzatore
+    for (const string& line : listLines)   // ogni riga è una Cell1D
     {
-        istringstream converter(line);
+        istringstream stream_line(line);
 
-        /// Memorizzo l'id
+        /// Cell1D_id
         string id_string;
-        getline(converter, id_string, ';');
-        unsigned int id = stoi(id_string);
-        mesh.Cell1DId.push_back(id);
+        getline(stream_line, id_string, ';');
+        unsigned int id = stoi(id_string);   // id da string a int
+        mesh.Cell1D_id.push_back(id);
 
-        /// Memorizzo il marker
+        /// Cell1D_markers
         string marker_string;
-        getline(converter, marker_string, ';');
-        unsigned int marker = stoi(marker_string);
+        getline(stream_line, marker_string, ';');
+        unsigned int marker = stoi(marker_string);   // marker da string a int
 
-        if(marker != 0)
+        if(marker != 0)   // se il marker ha senso
         {
-            const auto it = mesh.MarkerCell1D.find(marker);
-            if(it == mesh.MarkerCell1D.end())
+            const auto it = mesh.Cell1D_markers.find(marker);  
+            if(it == mesh.Cell1D_markers.end())   // se il marker è nuovo, lo aggiungo col primo id
             {
-                mesh.MarkerCell1D.insert({marker, {id}});
+                mesh.Cell1D_markers.insert({marker, {id}});
             }
-            else
+            else   // se il marker già c'è, vi aggiungo l'id
             {
-                mesh.MarkerCell1D[marker].push_back(id);
+                mesh.Cell1D_markers[marker].push_back(id);
             }
         }
-        /// Memorizzo gli estremi del segmento
-        string extrema_iniziale;
-        getline(converter, extrema_iniziale, ';');
-        mesh.Cell1DExtrema(0, idx) = stoi(extrema_iniziale);
 
-        string extrema_finale;
-        getline(converter, extrema_finale, ';');
-        mesh.Cell1DExtrema(1, idx) = stoi(extrema_finale);
+        /// Cell1D_estremi
+        string inizio_string;
+        getline(stream_line, inizio_string, ';');
+        mesh.Cell1D_estremi(0, i) = stoi(inizio_string);
 
-        ++idx;
-    
-        
+        string fine_string;
+        getline(stream_line, fine_string, ';');
+        mesh.Cell1D_estremi(1, i) = stoi(fine_string);
+
+        ++i;
     }
 
     return true;
 }
-// ***************************************************************************
-/* Solido = Cell2D:
-    - NumCell2D : numero di solidi
-    - Cell2DId : vettore dell'id di ciascun solido
-    - Cell2DNumVertice : numero di vertici di ogni solido
-    - Cell2DVertice : vettore di vettori dei vertici di ciascun solido
-    - Cell2DNumEdge : numero di lati di ogni solido
-    - Cell2DEdge: vettore di vettori dei lati di ciascun solido
-    */
 
-bool ImportCell2D(PolygonalMesh& mesh)
+
+/************************************************/
+
+/*
+// Funzione : ImportCell2D : legge il file dei dati e li memorizza nello struct PolygonalMesh
+// Inputs : 
+PolygonalMesh& mesh : reference allo struct PolygonalMesh
+const string& inputFile : file da leggere
+// Outputs : riempimento dello struct PolygonalMesh
+*/
+bool ImportCell2D(PolygonalMesh& mesh, const string& Cell2D_inputFile)
 {
-    ifstream file;
-    file.open("./Cell2Ds.csv");
 
-    if(file.fail())
+    /// LETTURA FILE E SALVATAGGIO DI TUTTE LE RIGHE
+    ifstream file;
+    file.open(Cell2D_inputFile);
+
+    if(file.fail())   // verifico apertura file
         return false;
 
     list<string> listLines;
     string line;
-    while (getline(file, line))
+    while (getline(file, line))   // raccolgo tutte le righe nel listLines
         listLines.push_back(line);
 
-    file.close();
+    file.close();   // chiudo il file
 
-    listLines.pop_front();
+    listLines.pop_front();   // tolgo l'header (=prima riga)
 
-    mesh.NumCell2D = listLines.size();    // numero di celle memorizzato
 
-    if (mesh.NumCell2D == 0)
+    /// RIEMPIMENTO DELLO STRUCT MESH
+
+    /// Cell2D_num
+    mesh.Cell2D_num = listLines.size();    
+
+    if (mesh.Cell2D_num == 0)
     {
-        cerr << "There is no cell 2D" << endl;
+        cerr << "Non ci sono Cell2D." << endl;
         return false;
     }
 
-    mesh.Cell2DId.reserve(mesh.NumCell2D);
-    mesh.Cell2DVertice.reserve(mesh.NumCell2D);
-    mesh.Cell2DEdge.reserve(mesh.NumCell2D);
+    /// Cell2D_id , Cell2D_vertici, Cell2D_lati
+    mesh.Cell2D_id.reserve(mesh.Cell2D_num);   // alloco memoria
+    mesh.Cell2D_vertici.reserve(mesh.Cell2D_num);   // alloco memoria
+    mesh.Cell2D_lati.reserve(mesh.Cell2D_num);   // alloco memoria
 
-    for (const string& line : listLines)
+    
+    for (const string& line : listLines)   // ogni riga è una Cell2D
     {
-        istringstream converter(line);
+        istringstream stream_line(line);
 
-        // Memorizzo l'id nel vettore 
+        /// Cell2D_id 
         string id_string;
-        getline(converter, id_string, ';');
-        unsigned int id = stoi(id_string);
-        mesh.Cell2DId.push_back(id);   // memorizzo l'id nel vettore
+        getline(stream_line, id_string, ';');
+        unsigned int id = stoi(id_string);   // id da string a int
+        mesh.Cell2D_id.push_back(id);   
 
-        // Memorizzo il marker che poi ignorerò perchè tanto è tutto zero
+        /// Cell2D_markers (da ignorare)
         string marker_string;
-        getline(converter, marker_string, ';');
+        getline(stream_line, marker_string, ';');
         
-        // Memorizzo il vettore dei vertici
-        string NumVer_string;
-        getline(converter, NumVer_string, ';');
-        mesh.Cell2DNumVertice = stoi(NumVer_string);   //numero dei vertici memorizzato
+        /// Cell2D_vertici
+        string numVertici_string;
+        getline(stream_line, numVertici_string, ';');
+        unsigned int numVertici = stoi(numVertici_string);   // numVertici da string a int 
+        mesh.Cell2D_numVertici.push_back(numVertici); 
 
-        vector<unsigned int> vertice(mesh.Cell2DNumVertice);   // vettore dei vertici
-        for(unsigned int i = 0; i < mesh.Cell2DNumVertice; i++) {
+        vector<unsigned int> vertici(numVertici);   // vettore degli id dei vertici
+        for(unsigned int i = 0; i < numVertici; i++) {
             string vertice_string;
-            getline(converter, vertice_string, ';');
-            vertice[i] = stoi(vertice_string);
+            getline(stream_line, vertice_string, ';');
+            vertici[i] = stoi(vertice_string);
         }   
-        mesh.Cell2DVertice.push_back(vertice);   // memorizzo il vettore dei vertici nel vettore 
+
+        mesh.Cell2D_vertici.push_back(vertici);   
         
 
-        // memorizzo il vettore dei lati
-        string NumEdge_string;
-        getline(converter, NumEdge_string, ';');
-        mesh.Cell2DNumEdge = stoi(NumEdge_string);
+        /// Cell2D_lati
+        string numLati_string;
+        getline(stream_line, numLati_string, ';');
+        unsigned int numLati = stoi(numLati_string);   // numLati da string a int
+        mesh.Cell2D_numLati.push_back(numLati);
 
-        vector<unsigned int> edge(mesh.Cell2DNumEdge);
+        vector<unsigned int> lati(numLati);   // vettore degli id dei lati
 
-        for(unsigned int i = 0; i < mesh.Cell2DNumEdge; i++) {
-            string edge_string;
-        getline(converter, edge_string, ';');
-        edge[i] = stoi(edge_string);
+        for(unsigned int i = 0; i < numLati; i++) {
+            string lato_string;
+            getline(stream_line, lato_string, ';');
+            lati[i] = stoi(lato_string);
         }
         
-        mesh.Cell2DEdge.push_back(edge);
+        mesh.Cell2D_lati.push_back(lati);
     }
 
     return true;
